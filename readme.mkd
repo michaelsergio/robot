@@ -1,0 +1,13 @@
+# Go-Robot
+The purpose of go robot is to emulate Java's Robot class.
+It will be cross-platform.
+Expected to work with Windows, Mac, and Linux.
+
+## Work in progrss
+
+
+## Testing
+There will be a small test suite which displays windows of pixels
+that should not mistakenly be there.
+
+
