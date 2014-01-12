@@ -1,13 +1,19 @@
 package robot
 
 import (
-	"github.com/skelterjohn/go.wde"
-	_ "github.com/skelterjohn/go.wde/init"
+	"fmt"
+	"github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb/xproto"
+	"github.com/BurntSushi/xgb/xtest"
 	"image"
 	"image/color"
+	"time"
 )
 
-type Robo interface {
+type Robot interface {
+	// Creates a NewRobot connection
+	NewRobot() Robot
+
 	// Creates an image containing pixels read from the screen.
 	CreateScreenCapture(screenRect image.Rectangle) image.Image
 
@@ -58,10 +64,81 @@ type Robo interface {
 	WaitForIdle()
 }
 
-type Robot struct {
+type XRobot struct {
+	X      *xgb.Conn
+	Screen *xproto.ScreenInfo
 }
 
-func (Robot) Window() {
-	wde.Run()
-	//wde.NewWindow(300, 100)
+func (robot *XRobot) NewRobot() {
+	X, err := xgb.NewConn()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	setup := xproto.Setup(X)
+
+	robot.Screen = setup.DefaultScreen(X)
+	robot.X = X
 }
+
+func (robot XRobot) String() string {
+	return "XRobot Session"
+}
+
+func (robot XRobot) MouseMove(x, y int16) {
+	root := robot.Screen.Root
+	none := xproto.Window(0)
+	cookie := xproto.WarpPointerChecked(robot.X, none, root, 0, 0, 0, 0, x, y)
+	err := cookie.Check()
+	if err != nil {
+		fmt.Printf("Error:%v\n", err)
+	} else {
+		fmt.Printf("Unchecked\n")
+	}
+
+	time.Sleep(2000)
+}
+
+func (robot XRobot) KeyPress(keycode int) {
+	if err := xtest.Init(robot.X); err != nil {
+		fmt.Printf("Error:%v\n", err)
+		return
+	}
+	typ := byte(xproto.KeyPress)
+	detail := byte(keycode)
+	time := uint32(0)
+	id := byte(0)
+	cookie := xtest.FakeInputChecked(robot.X, typ, detail, time,
+		robot.Screen.Root, 0, 0, id)
+	err := cookie.Check()
+	if err != nil {
+		fmt.Printf("Error:%v\n", err)
+	} else {
+		fmt.Printf("Unchecked\n")
+	}
+
+}
+
+func (robot XRobot) Version() {
+	cookie := xtest.GetVersionUnchecked(robot.X, 2, 7)
+	fmt.Printf("Cookie:%v\n", cookie)
+	reply, err := cookie.Reply()
+	if err != nil {
+		fmt.Printf("Error:%v\n", cookie)
+	}
+	fmt.Printf("reply:%v\n", reply)
+
+}
+
+/*
+	// Might come in handy to keep this around
+	ev, xerr := robot.X.WaitForEvent()
+	if ev == nil && xerr == nil {
+		fmt.Println("Both null")
+	}
+	if ev != nil {
+		fmt.Printf("Event:%v\n", ev)
+	}
+	if xerr != nil {
+		fmt.Printf("Event:%v\n", xerr)
+*/

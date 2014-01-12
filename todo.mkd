@@ -1,0 +1,10 @@
+#TODO
+
+## OSX
+Running on OSX with X11
+
+
+## Testing
+There will be a small test suite which displays windows of pixels
+that should not mistakenly be there.
+
